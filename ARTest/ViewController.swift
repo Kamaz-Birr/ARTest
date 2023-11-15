@@ -10,6 +10,8 @@ import SceneKit
 import ARKit
 
 class ViewController: UIViewController, ARSCNViewDelegate {
+    
+    var diceArray = [SCNNode]()
 
     @IBOutlet var sceneView: ARSCNView!
     
@@ -93,12 +95,51 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                             y: hitResult.worldTransform.columns.3.y + diceNode.boundingSphere.radius,
                             z: hitResult.worldTransform.columns.3.z
                         )
+                        
+                        // Place each dice into the array
+                        diceArray.append(diceNode)
+                        
                         sceneView.scene.rootNode.addChildNode(diceNode)
+                        
+                        roll(dice: diceNode)
                     }
                 }
             }
         }
     }
+    
+    func rollAll() {
+        if !diceArray.isEmpty {
+            for dice in diceArray {
+                roll(dice: dice)
+            }
+        }
+    }
+    
+    func roll(dice: SCNNode) {
+        let randomX = Float(arc4random_uniform(4) + 1) * (Float.pi/2)
+        let randomZ = Float(arc4random_uniform(4) + 1) * (Float.pi/2)
+        
+        dice.runAction(SCNAction.rotateBy(x: CGFloat(randomX * 5), y: 0, z: CGFloat(randomZ * 5), duration: 0.5))
+    }
+    
+    
+    @IBAction func rollAgain(_ sender: UIBarButtonItem) {
+        rollAll()
+    }
+    
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        rollAll()
+    }
+    
+    @IBAction func removeAllDice(_ sender: UIBarButtonItem) {
+        if !diceArray.isEmpty {
+            for dice in diceArray {
+                dice.removeFromParentNode()
+            }
+        }
+    }
+    
     
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         if anchor is ARPlaneAnchor {
