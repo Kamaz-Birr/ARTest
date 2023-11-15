@@ -79,12 +79,45 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.session.pause()
     }
     
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let touch = touches.first {
+            let touchLocation = touch.location(in: sceneView)
+            
+            if let query = sceneView.raycastQuery(from: touchLocation, allowing: .existingPlaneGeometry, alignment: .any) {
+                let results = sceneView.session.raycast(query)
+                if let hitResult = results.first {
+                    let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
+                    if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
+                        diceNode.position = SCNVector3(
+                            x: hitResult.worldTransform.columns.3.x,
+                            y: hitResult.worldTransform.columns.3.y + diceNode.boundingSphere.radius,
+                            z: hitResult.worldTransform.columns.3.z
+                        )
+                        sceneView.scene.rootNode.addChildNode(diceNode)
+                    }
+                }
+            }
+        }
+    }
+    
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         if anchor is ARPlaneAnchor {
             let planeAnchor = anchor as! ARPlaneAnchor
             let plane = SCNPlane(width: CGFloat(planeAnchor.planeExtent.width), height: CGFloat(planeAnchor.planeExtent.height))
             let planeNode = SCNNode()
             planeNode.position = SCNVector3(x: planeAnchor.center.x, y: 0, z: planeAnchor.center.z)
+            
+            // By default, the SCNPlane is vertical. Transform to horizontal
+            planeNode.transform = SCNMatrix4MakeRotation(-Float.pi / 2, 1, 0, 0)
+            
+            let gridMaterial = SCNMaterial()
+            gridMaterial.diffuse.contents = UIImage(named: "art.scnassets/grid.png")
+            
+            plane.materials = [gridMaterial]
+            
+            planeNode.geometry = plane
+            
+            node.addChildNode(planeNode)
         } else {
             return
         }
